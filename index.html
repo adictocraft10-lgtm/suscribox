@@ -141,12 +141,15 @@
                 </div>
             </div>
 
-            <div class="flex justify-center items-center pt-4 space-x-4">
-                <button id="generate-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                    Generar Libro Completo
+            <div class="flex flex-col sm:flex-row justify-center items-center pt-4 space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="generate-pdf-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    Libro Completo
                 </button>
-                <button id="generate-cover-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                    Generar Solo Portada
+                <button id="generate-cover-btn" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    Solo Portada
+                </button>
+                <button id="generate-pages-btn" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    Solo Dibujos
                 </button>
             </div>
 
@@ -625,8 +628,12 @@
             }
         };
 
-        const generatePdf = async (includeInteriors) => {
-            const buttonToUpdate = includeInteriors ? generatePdfBtn : document.getElementById('generate-cover-btn');
+        const generatePdf = async (includeCover, includeInteriors) => {
+            let buttonToUpdate;
+            if(includeCover && includeInteriors) buttonToUpdate = generatePdfBtn;
+            else if(includeCover) buttonToUpdate = document.getElementById('generate-cover-btn');
+            else buttonToUpdate = document.getElementById('generate-pages-btn');
+
             const originalText = buttonToUpdate.innerHTML;
 
             buttonToUpdate.innerHTML = 'Generando...';
@@ -653,7 +660,9 @@
                 ]
             };
 
-            await createCoverPage(pdfDoc, pageLayout);
+            if (includeCover) {
+                await createCoverPage(pdfDoc, pageLayout);
+            }
             if (includeInteriors) {
                 await createInteriorPages(pdfDoc, pageLayout);
             }
@@ -664,7 +673,15 @@
             const pdfUrl = URL.createObjectURL(pdfBlob);
 
             downloadLink.href = pdfUrl;
-            downloadLink.download = includeInteriors ? 'libro_para_colorear.pdf' : 'portada.pdf';
+            let filename = 'libro_personalizado.pdf';
+            if (includeCover && includeInteriors) {
+                filename = 'libro_completo.pdf';
+            } else if (includeCover) {
+                filename = 'portada.pdf';
+            } else if (includeInteriors) {
+                filename = 'dibujos.pdf';
+            }
+            downloadLink.download = filename;
             outputArea.classList.remove('hidden');
 
             buttonToUpdate.innerHTML = originalText;
@@ -673,18 +690,26 @@
 
         generatePdfBtn.addEventListener('click', () => {
             if (!imagesData.frontCover.file || !imagesData.backCover.file || imagesData.pages.length === 0) {
-                alert('Por favor, sube una portada, una contraportada y al menos una página de contenido.');
+                alert('Para el libro completo, necesitas portada, contraportada y páginas de dibujos.');
                 return;
             }
-            generatePdf(true);
+            generatePdf(true, true);
         });
 
         document.getElementById('generate-cover-btn').addEventListener('click', () => {
             if (!imagesData.frontCover.file || !imagesData.backCover.file) {
-                alert('Por favor, sube la portada y la contraportada para poder generar el archivo.');
+                alert('Por favor, sube la portada y la contraportada.');
                 return;
             }
-            generatePdf(false);
+            generatePdf(true, false);
+        });
+
+        document.getElementById('generate-pages-btn').addEventListener('click', () => {
+            if (imagesData.pages.length === 0) {
+                alert('Por favor, sube las páginas de los dibujos.');
+                return;
+            }
+            generatePdf(false, true);
         });
 
         function alert(message) {
