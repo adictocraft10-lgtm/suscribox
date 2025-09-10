@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Libros para Colorear</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f0f4f8;
+            font-family: 'Inter', sans-serif;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 2rem;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+        .file-input-label {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .file-input-label:hover {
+            background-color: #2563eb;
+        }
+        .image-preview {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            border: 2px dashed #d1d5db;
+            border-radius: 0.75rem;
+            height: 200px;
+            overflow: hidden;
+            background-color: #f9fafb;
+            text-align: center;
+            color: #6b7280;
+            cursor: pointer;
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .editor-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+        .editor-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #editor-canvas {
+            border: 2px solid #3b82f6;
+            background-color: #f0f4f8;
+            cursor: grab;
+            max-width: 100%;
+            max-height: 60vh;
+        }
+        .editor-controls {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="container">
+        <div class="card space-y-8">
+            <h1 class="text-3xl font-bold text-center text-blue-600">Generador de Libros para Colorear</h1>
+
+            <p class="text-center text-gray-600">Sube la portada, la contraportada y las imágenes para las páginas. El programa hará los ajustes para la impresión.</p>
+
+            <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
+                <div class="flex-1">
+                    <label class="text-lg font-medium text-gray-700">Subir Portada</label>
+                    <div class="mt-2 w-full">
+                        <label for="front-cover-input" class="file-input-label hover:bg-blue-700">Seleccionar Portada</label>
+                        <input type="file" id="front-cover-input" class="hidden" accept="image/*">
+                    </div>
+                    <div id="front-cover-preview" class="image-preview mt-4">
+                        <span class="text-sm">Vista previa de la portada</span>
+                    </div>
+                </div>
+
+                <div class="flex-1">
+                    <label class="text-lg font-medium text-gray-700">Subir Contraportada</label>
+                    <div class="mt-2 w-full">
+                        <label for="back-cover-input" class="file-input-label hover:bg-blue-700">Seleccionar Contraportada</label>
+                        <input type="file" id="back-cover-input" class="hidden" accept="image/*">
+                    </div>
+                    <div id="back-cover-preview" class="image-preview mt-4">
+                        <span class="text-sm">Vista previa de la contraportada</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <label class="text-lg font-medium text-gray-700">Subir Páginas (múltiples archivos)</label>
+                <div class="mt-2 w-full">
+                    <label for="pages-input" class="file-input-label hover:bg-blue-700">Seleccionar Páginas</label>
+                    <input type="file" id="pages-input" class="hidden" accept="image/*" multiple>
+                </div>
+                <div id="pages-preview" class="image-preview mt-4">
+                    <span class="text-sm">Vista previa de las páginas</span>
+                </div>
+            </div>
+
+            <div class="flex justify-center pt-4">
+                <button id="generate-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    Generar PDF
+                </button>
+            </div>
+
+        </div>
+
+        <div id="output-area" class="mt-8 hidden">
+            <div class="card space-y-4">
+                <h2 class="text-2xl font-bold text-center text-gray-800">Tu Libro de Colorear</h2>
+                <div id="pdf-viewer" class="w-full h-96 border border-gray-300 rounded-lg overflow-y-auto">
+                    <!-- El PDF se renderizará aquí -->
+                    <p class="text-center text-gray-500 mt-2">El PDF se mostrará aquí una vez generado.</p>
+                </div>
+                <div class="flex justify-center mt-4">
+                    <a id="download-link" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105" download="libro_para_colorear.pdf">
+                        Descargar PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor de Imágenes -->
+    <div id="editor-modal" class="editor-modal">
+        <div class="editor-content">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Ajustar Imagen</h3>
+            <canvas id="editor-canvas" width="400" height="480"></canvas>
+            <div class="editor-controls">
+                <div class="slider-group">
+                    <label for="zoom-slider" class="text-sm font-medium text-gray-700">Zoom</label>
+                    <input type="range" id="zoom-slider" min="0.1" max="5" step="0.01" class="w-full">
+                </div>
+                <div class="flex justify-center mt-4">
+                    <button id="save-edit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mr-2">Guardar</button>
+                    <button id="reset-edit-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg mr-2">Reiniciar</button>
+                    <button id="cancel-edit-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        const frontCoverInput = document.getElementById('front-cover-input');
+        const backCoverInput = document.getElementById('back-cover-input');
+        const pagesInput = document.getElementById('pages-input');
+        const generatePdfBtn = document.getElementById('generate-pdf-btn');
+        const frontCoverPreview = document.getElementById('front-cover-preview');
+        const backCoverPreview = document.getElementById('back-cover-preview');
+        const pagesPreview = document.getElementById('pages-preview');
+        const outputArea = document.getElementById('output-area');
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const downloadLink = document.getElementById('download-link');
+        const editorModal = document.getElementById('editor-modal');
+        const editorCanvas = document.getElementById('editor-canvas');
+        const editorCtx = editorCanvas.getContext('2d');
+        const saveEditBtn = document.getElementById('save-edit-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const resetEditBtn = document.getElementById('reset-edit-btn');
+        const zoomSlider = document.getElementById('zoom-slider');
+
+        // Data structure to store images and their transformations
+        const imagesData = {
+            frontCover: { file: null, transform: { x: 0, y: 0, scaleX: 1, scaleY: 1 } },
+            backCover: { file: null, transform: { x: 0, y: 0, scaleX: 1, scaleY: 1 } },
+            pages: []
+        };
+        let currentImageIndex = null;
+        let initialTransformState = null;
+        let isDragging = false;
+        let lastMousePos = { x: 0, y: 0 };
+
+        // --- Image Manipulation Logic ---
+
+        const drawEditorGuides = (ctx) => {
+            const canvasWidth = ctx.canvas.width;
+            const canvasHeight = ctx.canvas.height;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.7)'; // Un color rojo para que sea bien visible
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 8]);
+            // Dibujar el rectángulo ligeramente hacia adentro para que el borde sea visible
+            ctx.strokeRect(1, 1, canvasWidth - 2, canvasHeight - 2);
+            ctx.restore(); // Restaurar el estado del contexto para no afectar otros dibujos
+        };
+
+        const drawImageOnEditor = (imageData, isCover) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvasWidth = editorCanvas.width;
+                const canvasHeight = editorCanvas.height;
+                editorCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+                editorCtx.fillStyle = '#f0f4f8';
+                editorCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                // If this is the first time editing, calculate initial scale and position
+                if (imageData.transform.scaleX === 1 && imageData.transform.scaleY === 1 && imageData.transform.x === 0 && imageData.transform.y === 0) {
+                    let scale;
+                    if (isCover) {
+                        scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
+                    } else {
+                        scale = Math.min(canvasWidth / img.width, canvasHeight / img.height);
+                    }
+                    imageData.transform.scaleX = scale;
+                    imageData.transform.scaleY = scale;
+
+                    const drawWidth = img.width * imageData.transform.scaleX;
+                    const drawHeight = img.height * imageData.transform.scaleY;
+
+                    imageData.transform.x = (canvasWidth - drawWidth) / 2;
+                    imageData.transform.y = (canvasHeight - drawHeight) / 2;
+                }
+
+                const drawWidth = img.width * imageData.transform.scaleX;
+                const drawHeight = img.height * imageData.transform.scaleY;
+
+                editorCtx.drawImage(img, imageData.transform.x, imageData.transform.y, drawWidth, drawHeight);
+                drawEditorGuides(editorCtx);
+
+                // Update slider
+                zoomSlider.value = imageData.transform.scaleX;
+            };
+            img.src = imageData.url;
+        };
+
+        const updateImageOnEditor = (imageData) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvasWidth = editorCanvas.width;
+                const canvasHeight = editorCanvas.height;
+                editorCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+                editorCtx.fillStyle = '#f0f4f8';
+                editorCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                const drawWidth = img.width * imageData.transform.scaleX;
+                const drawHeight = img.height * imageData.transform.scaleY;
+
+                editorCtx.drawImage(img, imageData.transform.x, imageData.transform.y, drawWidth, drawHeight);
+                drawEditorGuides(editorCtx);
+            };
+            img.src = imageData.url;
+        };
+
+        const openImageEditor = (type, index = null) => {
+            editorModal.style.display = 'flex';
+            currentImageIndex = { type, index };
+
+            let imageData = null;
+            if (type === 'frontCover') {
+                imageData = imagesData.frontCover;
+            } else if (type === 'backCover') {
+                imageData = imagesData.backCover;
+            } else {
+                imageData = imagesData.pages[index];
+            }
+
+            initialTransformState = { ...imageData.transform };
+
+            if (imageData.file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imageData.url = e.target.result;
+                    drawImageOnEditor(imageData, type !== 'pages');
+                };
+                reader.readAsDataURL(imageData.file);
+            }
+        };
+
+        const saveImageTransform = () => {
+            // Take a snapshot of the current state of the editor canvas
+            const newThumbnailDataURL = editorCanvas.toDataURL();
+
+            // Get the correct preview element
+            let previewElement;
+            if (currentImageIndex.type === 'frontCover') {
+                previewElement = frontCoverPreview;
+            } else if (currentImageIndex.type === 'backCover') {
+                previewElement = backCoverPreview;
+            } else {
+                previewElement = pagesPreview.children[currentImageIndex.index];
+            }
+
+            // Update the image source of the thumbnail to reflect the changes
+            const previewImg = previewElement.querySelector('img');
+            if (previewImg) {
+                previewImg.src = newThumbnailDataURL;
+            }
+
+            // Close the modal
+            editorModal.style.display = 'none';
+        };
+
+        const cancelImageEdit = () => {
+            // Revert to the initial transform state
+            let imageData = null;
+            if (currentImageIndex.type === 'frontCover') {
+                imageData = imagesData.frontCover;
+            } else if (currentImageIndex.type === 'backCover') {
+                imageData = imagesData.backCover;
+            } else {
+                imageData = imagesData.pages[currentImageIndex.index];
+            }
+            imageData.transform = { ...initialTransformState };
+            editorModal.style.display = 'none';
+        };
+
+        editorCanvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMousePos.x = e.clientX;
+            lastMousePos.y = e.clientY;
+            editorCanvas.style.cursor = 'grabbing';
+        });
+
+        editorCanvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = editorCanvas.getBoundingClientRect();
+            const dx = (e.clientX - lastMousePos.x) * (editorCanvas.width / rect.width);
+            const dy = (e.clientY - lastMousePos.y) * (editorCanvas.height / rect.height);
+
+            let imageData;
+            if (currentImageIndex.type === 'frontCover') {
+                imageData = imagesData.frontCover;
+            } else if (currentImageIndex.type === 'backCover') {
+                imageData = imagesData.backCover;
+            } else {
+                imageData = imagesData.pages[currentImageIndex.index];
+            }
+
+            imageData.transform.x += dx;
+            imageData.transform.y += dy;
+
+            lastMousePos.x = e.clientX;
+            lastMousePos.y = e.clientY;
+
+            updateImageOnEditor(imageData);
+        });
+
+        editorCanvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            editorCanvas.style.cursor = 'grab';
+        });
+
+        zoomSlider.addEventListener('input', (e) => {
+            let imageData;
+            if (currentImageIndex.type === 'frontCover') {
+                imageData = imagesData.frontCover;
+            } else if (currentImageIndex.type === 'backCover') {
+                imageData = imagesData.backCover;
+            } else {
+                imageData = imagesData.pages[currentImageIndex.index];
+            }
+            const newScale = parseFloat(e.target.value);
+            imageData.transform.scaleX = newScale;
+            imageData.transform.scaleY = newScale; // Mantener proporción
+            updateImageOnEditor(imageData);
+        });
+
+        editorCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            let imageData;
+            if (currentImageIndex.type === 'frontCover') {
+                imageData = imagesData.frontCover;
+            } else if (currentImageIndex.type === 'backCover') {
+                imageData = imagesData.backCover;
+            } else {
+                imageData = imagesData.pages[currentImageIndex.index];
+            }
+            const zoomSpeed = 0.001;
+            const newScale = imageData.transform.scaleX * (1 + e.deltaY * -zoomSpeed);
+
+            // Prevent excessive zoom in/out
+            if (newScale < 0.1 || newScale > 5) return;
+
+            // Keep proportional zoom with wheel
+            imageData.transform.scaleX = newScale;
+            imageData.transform.scaleY = newScale;
+
+            zoomSlider.value = newScale;
+
+            updateImageOnEditor(imageData);
+        });
+
+        const resetImageTransform = () => {
+            let imageData;
+            if (currentImageIndex.type === 'frontCover') {
+                imageData = imagesData.frontCover;
+            } else if (currentImageIndex.type === 'backCover') {
+                imageData = imagesData.backCover;
+            } else {
+                imageData = imagesData.pages[currentImageIndex.index];
+            }
+            // Revert to the initial transform state
+            imageData.transform = { ...initialTransformState };
+            updateImageOnEditor(imageData);
+        };
+
+        saveEditBtn.addEventListener('click', saveImageTransform);
+        cancelEditBtn.addEventListener('click', cancelImageEdit);
+        resetEditBtn.addEventListener('click', resetImageTransform);
+
+        // --- Main App Logic ---
+
+        const renderImage = (file, previewElement, type, index = null) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.onclick = () => openImageEditor(type, index);
+
+                const previewImg = previewElement.querySelector('img');
+                if (previewImg) {
+                    previewImg.src = e.target.result;
+                } else {
+                    previewElement.innerHTML = '';
+                    previewElement.appendChild(img);
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        frontCoverInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                imagesData.frontCover.file = file;
+                renderImage(file, frontCoverPreview, 'frontCover');
+            }
+        });
+
+        backCoverInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                imagesData.backCover.file = file;
+                renderImage(file, backCoverPreview, 'backCover');
+            }
+        });
+
+        pagesInput.addEventListener('change', (e) => {
+            imagesData.pages = Array.from(e.target.files).map(file => ({
+                file: file,
+                transform: { x: 0, y: 0, scaleX: 1, scaleY: 1 }
+            }));
+            pagesPreview.innerHTML = '';
+            if (imagesData.pages.length > 0) {
+                imagesData.pages.forEach((imageData, index) => {
+                    const imgContainer = document.createElement('div');
+                    imgContainer.className = 'w-20 h-20 overflow-hidden m-1 rounded-md border border-gray-300 cursor-pointer';
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(imageData.file);
+                    img.className = 'w-full h-full object-cover';
+                    img.onclick = () => openImageEditor('pages', index);
+                    imgContainer.appendChild(img);
+                    pagesPreview.appendChild(imgContainer);
+                });
+                if (imagesData.pages.length > 1) {
+                    pagesPreview.style.flexDirection = 'row';
+                    pagesPreview.style.flexWrap = 'wrap';
+                    pagesPreview.style.justifyContent = 'flex-start';
+                }
+            } else {
+                pagesPreview.style.flexDirection = 'column';
+                pagesPreview.innerHTML = '<span class="text-sm">Vista previa de las páginas</span>';
+            }
+        });
+
+        // Function to render PDF pages to a canvas
+        const renderPdfToCanvas = async (pdfBytes) => {
+            const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+            const pdf = await loadingTask.promise;
+
+            // Clear previous PDF content
+            pdfViewer.innerHTML = '';
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const scale = 1.5;
+                const viewport = page.getViewport({ scale });
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.className = 'shadow-md rounded-lg mb-4';
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                await page.render(renderContext).promise;
+                pdfViewer.appendChild(canvas);
+            }
+        };
+
+        generatePdfBtn.addEventListener('click', async () => {
+            if (!imagesData.frontCover.file || !imagesData.backCover.file || imagesData.pages.length === 0) {
+                alert('Por favor, sube una portada, una contraportada y al menos una página de contenido.');
+                return;
+            }
+
+            generatePdfBtn.innerHTML = 'Generando...';
+            generatePdfBtn.disabled = true;
+
+            const { PDFDocument, rgb, PageSizes } = PDFLib;
+            const pdfDoc = await PDFDocument.create();
+            const [pageWidth, pageHeight] = PageSizes.Letter;
+            const cmToPoints = 28.3465;
+            const finalBookWidth = 10 * cmToPoints;
+            const finalBookHeight = 12 * cmToPoints;
+            const contentWidth = finalBookWidth * 2;
+            const contentHeight = finalBookHeight * 2;
+            const xOffset = (pageWidth - contentWidth) / 2;
+            const yOffset = (pageHeight - contentHeight) / 2;
+
+            const positions = [
+                { x: xOffset, y: yOffset + finalBookHeight },
+                { x: xOffset + finalBookWidth, y: yOffset + finalBookHeight },
+                { x: xOffset, y: yOffset },
+                { x: xOffset + finalBookWidth, y: yOffset }
+            ];
+
+            const embedAndDrawImage = async (pdfDoc, page, file, position, isCover, transform) => {
+                const bytes = await file.arrayBuffer();
+                let imageEmbed;
+                try {
+                    imageEmbed = await pdfDoc.embedJpg(bytes);
+                } catch (e) {
+                    try {
+                        imageEmbed = await pdfDoc.embedPng(bytes);
+                    } catch (e) {
+                        console.error("No se pudo procesar la imagen:", file.name);
+                        return;
+                    }
+                }
+
+                const originalWidth = imageEmbed.width;
+                const originalHeight = imageEmbed.height;
+
+                // Dimensiones de la imagen tal como se ven en el editor
+                const editorDrawWidth = originalWidth * transform.scaleX;
+                const editorDrawHeight = originalHeight * transform.scaleY;
+
+                // Traducir las dimensiones del editor al espacio del PDF
+                const pdfDrawWidth = (editorDrawWidth / editorCanvas.width) * finalBookWidth;
+                const pdfDrawHeight = (editorDrawHeight / editorCanvas.height) * finalBookHeight;
+
+                // Traducir la posición del editor al espacio del PDF
+                const pdfX = position.x + (transform.x / editorCanvas.width) * finalBookWidth;
+
+                // La coordenada Y debe ser invertida porque el origen del canvas es arriba-izquierda
+                // y el de pdf-lib es abajo-izquierda.
+                const pdfY = position.y + ((editorCanvas.height - transform.y - editorDrawHeight) / editorCanvas.height) * finalBookHeight;
+
+                page.drawImage(imageEmbed, {
+                    x: pdfX,
+                    y: pdfY,
+                    width: pdfDrawWidth,
+                    height: pdfDrawHeight,
+                });
+            };
+
+            // --- Cover Page ---
+            const coverPage = pdfDoc.addPage([pageWidth, pageHeight]);
+            await embedAndDrawImage(pdfDoc, coverPage, imagesData.backCover.file, positions[0], true, imagesData.backCover.transform);
+            await embedAndDrawImage(pdfDoc, coverPage, imagesData.frontCover.file, positions[1], true, imagesData.frontCover.transform);
+
+            // Draw borders and cut lines
+            coverPage.drawRectangle({ x: positions[0].x, y: positions[0].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
+            coverPage.drawRectangle({ x: positions[1].x, y: positions[1].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
+            coverPage.drawRectangle({ x: xOffset, y: yOffset, width: contentWidth, height: contentHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 0.5, borderDash: [5, 5] });
+            coverPage.drawLine({ start: { x: xOffset + contentWidth / 2, y: yOffset }, end: { x: xOffset + contentWidth / 2, y: yOffset + contentHeight }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+            coverPage.drawLine({ start: { x: xOffset, y: yOffset + contentHeight / 2 }, end: { x: xOffset + contentWidth, y: yOffset + contentHeight / 2 }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+
+            // --- Interior Pages ---
+            for (let i = 0; i < imagesData.pages.length; i += 4) {
+                const page = pdfDoc.addPage([pageWidth, pageHeight]);
+                for (let j = 0; j < 4; j++) {
+                    const pageIndex = i + j;
+                    if (pageIndex < imagesData.pages.length) {
+                        const imageData = imagesData.pages[pageIndex];
+                        await embedAndDrawImage(pdfDoc, page, imageData.file, positions[j], false, imageData.transform);
+                        page.drawRectangle({ x: positions[j].x, y: positions[j].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
+                    }
+                }
+                page.drawRectangle({ x: xOffset, y: yOffset, width: contentWidth, height: contentHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 0.5, borderDash: [5, 5] });
+                page.drawLine({ start: { x: xOffset + contentWidth / 2, y: yOffset }, end: { x: xOffset + contentWidth / 2, y: yOffset + contentHeight }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+                page.drawLine({ start: { x: xOffset, y: yOffset + contentHeight / 2 }, end: { x: xOffset + contentWidth, y: yOffset + contentHeight / 2 }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+            }
+
+            const pdfBytes = await pdfDoc.save();
+            renderPdfToCanvas(pdfBytes);
+            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+            downloadLink.href = pdfUrl;
+            outputArea.classList.remove('hidden');
+
+            generatePdfBtn.innerHTML = 'Generar PDF';
+            generatePdfBtn.disabled = false;
+        });
+
+        function alert(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
