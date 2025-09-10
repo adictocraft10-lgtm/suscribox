@@ -141,9 +141,12 @@
                 </div>
             </div>
 
-            <div class="flex justify-center pt-4">
+            <div class="flex justify-center items-center pt-4 space-x-4">
                 <button id="generate-pdf-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                    Generar PDF
+                    Generar Libro Completo
+                </button>
+                <button id="generate-cover-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    Generar Solo Portada
                 </button>
             </div>
 
@@ -553,16 +556,82 @@
             }
         };
 
-        generatePdfBtn.addEventListener('click', async () => {
-            if (!imagesData.frontCover.file || !imagesData.backCover.file || imagesData.pages.length === 0) {
-                alert('Por favor, sube una portada, una contraportada y al menos una página de contenido.');
-                return;
+        const { PDFDocument, rgb, PageSizes } = PDFLib;
+
+        const embedAndDrawImage = async (pdfDoc, page, file, position, isCover, transform, pageLayout) => {
+            const bytes = await file.arrayBuffer();
+            let imageEmbed;
+            try {
+                imageEmbed = await pdfDoc.embedJpg(bytes);
+            } catch (e) {
+                try {
+                    imageEmbed = await pdfDoc.embedPng(bytes);
+                } catch (e) {
+                    console.error("No se pudo procesar la imagen:", file.name);
+                    return;
+                }
             }
 
-            generatePdfBtn.innerHTML = 'Generando...';
-            generatePdfBtn.disabled = true;
+            const originalWidth = imageEmbed.width;
+            const originalHeight = imageEmbed.height;
+            const { finalBookWidth, finalBookHeight } = pageLayout;
 
-            const { PDFDocument, rgb, PageSizes } = PDFLib;
+            const editorDrawWidth = originalWidth * transform.scaleX;
+            const editorDrawHeight = originalHeight * transform.scaleY;
+
+            const pdfDrawWidth = (editorDrawWidth / editorCanvas.width) * finalBookWidth;
+            const pdfDrawHeight = (editorDrawHeight / editorCanvas.height) * finalBookHeight;
+
+            const pdfX = position.x + (transform.x / editorCanvas.width) * finalBookWidth;
+            const pdfY = position.y + ((editorCanvas.height - transform.y - editorDrawHeight) / editorCanvas.height) * finalBookHeight;
+
+            page.drawImage(imageEmbed, {
+                x: pdfX,
+                y: pdfY,
+                width: pdfDrawWidth,
+                height: pdfDrawHeight,
+            });
+        };
+
+        const createCoverPage = async (pdfDoc, pageLayout) => {
+            const { pageWidth, pageHeight, positions, finalBookWidth, finalBookHeight, xOffset, yOffset, contentWidth, contentHeight } = pageLayout;
+            const coverPage = pdfDoc.addPage([pageWidth, pageHeight]);
+
+            await embedAndDrawImage(pdfDoc, coverPage, imagesData.backCover.file, positions[0], true, imagesData.backCover.transform, pageLayout);
+            await embedAndDrawImage(pdfDoc, coverPage, imagesData.frontCover.file, positions[1], true, imagesData.frontCover.transform, pageLayout);
+
+            coverPage.drawRectangle({ x: positions[0].x, y: positions[0].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
+            coverPage.drawRectangle({ x: positions[1].x, y: positions[1].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
+            coverPage.drawRectangle({ x: xOffset, y: yOffset, width: contentWidth, height: contentHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 0.5, borderDash: [5, 5] });
+            coverPage.drawLine({ start: { x: xOffset + contentWidth / 2, y: yOffset }, end: { x: xOffset + contentWidth / 2, y: yOffset + contentHeight }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+            coverPage.drawLine({ start: { x: xOffset, y: yOffset + contentHeight / 2 }, end: { x: xOffset + contentWidth, y: yOffset + contentHeight / 2 }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+        };
+
+        const createInteriorPages = async (pdfDoc, pageLayout) => {
+            const { pageWidth, pageHeight, positions, finalBookWidth, finalBookHeight, xOffset, yOffset, contentWidth, contentHeight } = pageLayout;
+            for (let i = 0; i < imagesData.pages.length; i += 4) {
+                const page = pdfDoc.addPage([pageWidth, pageHeight]);
+                for (let j = 0; j < 4; j++) {
+                    const pageIndex = i + j;
+                    if (pageIndex < imagesData.pages.length) {
+                        const imageData = imagesData.pages[pageIndex];
+                        await embedAndDrawImage(pdfDoc, page, imageData.file, positions[j], false, imageData.transform, pageLayout);
+                        page.drawRectangle({ x: positions[j].x, y: positions[j].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
+                    }
+                }
+                page.drawRectangle({ x: xOffset, y: yOffset, width: contentWidth, height: contentHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 0.5, borderDash: [5, 5] });
+                page.drawLine({ start: { x: xOffset + contentWidth / 2, y: yOffset }, end: { x: xOffset + contentWidth / 2, y: yOffset + contentHeight }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+                page.drawLine({ start: { x: xOffset, y: yOffset + contentHeight / 2 }, end: { x: xOffset + contentWidth, y: yOffset + contentHeight / 2 }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+            }
+        };
+
+        const generatePdf = async (includeInteriors) => {
+            const buttonToUpdate = includeInteriors ? generatePdfBtn : document.getElementById('generate-cover-btn');
+            const originalText = buttonToUpdate.innerHTML;
+
+            buttonToUpdate.innerHTML = 'Generando...';
+            buttonToUpdate.disabled = true;
+
             const pdfDoc = await PDFDocument.create();
             const [pageWidth, pageHeight] = PageSizes.Letter;
             const cmToPoints = 28.3465;
@@ -573,79 +642,20 @@
             const xOffset = (pageWidth - contentWidth) / 2;
             const yOffset = (pageHeight - contentHeight) / 2;
 
-            const positions = [
-                { x: xOffset, y: yOffset + finalBookHeight },
-                { x: xOffset + finalBookWidth, y: yOffset + finalBookHeight },
-                { x: xOffset, y: yOffset },
-                { x: xOffset + finalBookWidth, y: yOffset }
-            ];
-
-            const embedAndDrawImage = async (pdfDoc, page, file, position, isCover, transform) => {
-                const bytes = await file.arrayBuffer();
-                let imageEmbed;
-                try {
-                    imageEmbed = await pdfDoc.embedJpg(bytes);
-                } catch (e) {
-                    try {
-                        imageEmbed = await pdfDoc.embedPng(bytes);
-                    } catch (e) {
-                        console.error("No se pudo procesar la imagen:", file.name);
-                        return;
-                    }
-                }
-
-                const originalWidth = imageEmbed.width;
-                const originalHeight = imageEmbed.height;
-
-                // Dimensiones de la imagen tal como se ven en el editor
-                const editorDrawWidth = originalWidth * transform.scaleX;
-                const editorDrawHeight = originalHeight * transform.scaleY;
-
-                // Traducir las dimensiones del editor al espacio del PDF
-                const pdfDrawWidth = (editorDrawWidth / editorCanvas.width) * finalBookWidth;
-                const pdfDrawHeight = (editorDrawHeight / editorCanvas.height) * finalBookHeight;
-
-                // Traducir la posición del editor al espacio del PDF
-                const pdfX = position.x + (transform.x / editorCanvas.width) * finalBookWidth;
-
-                // La coordenada Y debe ser invertida porque el origen del canvas es arriba-izquierda
-                // y el de pdf-lib es abajo-izquierda.
-                const pdfY = position.y + ((editorCanvas.height - transform.y - editorDrawHeight) / editorCanvas.height) * finalBookHeight;
-
-                page.drawImage(imageEmbed, {
-                    x: pdfX,
-                    y: pdfY,
-                    width: pdfDrawWidth,
-                    height: pdfDrawHeight,
-                });
+            const pageLayout = {
+                pageWidth, pageHeight, cmToPoints, finalBookWidth, finalBookHeight,
+                contentWidth, contentHeight, xOffset, yOffset,
+                positions: [
+                    { x: xOffset, y: yOffset + finalBookHeight },
+                    { x: xOffset + finalBookWidth, y: yOffset + finalBookHeight },
+                    { x: xOffset, y: yOffset },
+                    { x: xOffset + finalBookWidth, y: yOffset }
+                ]
             };
 
-            // --- Cover Page ---
-            const coverPage = pdfDoc.addPage([pageWidth, pageHeight]);
-            await embedAndDrawImage(pdfDoc, coverPage, imagesData.backCover.file, positions[0], true, imagesData.backCover.transform);
-            await embedAndDrawImage(pdfDoc, coverPage, imagesData.frontCover.file, positions[1], true, imagesData.frontCover.transform);
-
-            // Draw borders and cut lines
-            coverPage.drawRectangle({ x: positions[0].x, y: positions[0].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
-            coverPage.drawRectangle({ x: positions[1].x, y: positions[1].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
-            coverPage.drawRectangle({ x: xOffset, y: yOffset, width: contentWidth, height: contentHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 0.5, borderDash: [5, 5] });
-            coverPage.drawLine({ start: { x: xOffset + contentWidth / 2, y: yOffset }, end: { x: xOffset + contentWidth / 2, y: yOffset + contentHeight }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
-            coverPage.drawLine({ start: { x: xOffset, y: yOffset + contentHeight / 2 }, end: { x: xOffset + contentWidth, y: yOffset + contentHeight / 2 }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
-
-            // --- Interior Pages ---
-            for (let i = 0; i < imagesData.pages.length; i += 4) {
-                const page = pdfDoc.addPage([pageWidth, pageHeight]);
-                for (let j = 0; j < 4; j++) {
-                    const pageIndex = i + j;
-                    if (pageIndex < imagesData.pages.length) {
-                        const imageData = imagesData.pages[pageIndex];
-                        await embedAndDrawImage(pdfDoc, page, imageData.file, positions[j], false, imageData.transform);
-                        page.drawRectangle({ x: positions[j].x, y: positions[j].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
-                    }
-                }
-                page.drawRectangle({ x: xOffset, y: yOffset, width: contentWidth, height: contentHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 0.5, borderDash: [5, 5] });
-                page.drawLine({ start: { x: xOffset + contentWidth / 2, y: yOffset }, end: { x: xOffset + contentWidth / 2, y: yOffset + contentHeight }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
-                page.drawLine({ start: { x: xOffset, y: yOffset + contentHeight / 2 }, end: { x: xOffset + contentWidth, y: yOffset + contentHeight / 2 }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+            await createCoverPage(pdfDoc, pageLayout);
+            if (includeInteriors) {
+                await createInteriorPages(pdfDoc, pageLayout);
             }
 
             const pdfBytes = await pdfDoc.save();
@@ -654,10 +664,27 @@
             const pdfUrl = URL.createObjectURL(pdfBlob);
 
             downloadLink.href = pdfUrl;
+            downloadLink.download = includeInteriors ? 'libro_para_colorear.pdf' : 'portada.pdf';
             outputArea.classList.remove('hidden');
 
-            generatePdfBtn.innerHTML = 'Generar PDF';
-            generatePdfBtn.disabled = false;
+            buttonToUpdate.innerHTML = originalText;
+            buttonToUpdate.disabled = false;
+        };
+
+        generatePdfBtn.addEventListener('click', () => {
+            if (!imagesData.frontCover.file || !imagesData.backCover.file || imagesData.pages.length === 0) {
+                alert('Por favor, sube una portada, una contraportada y al menos una página de contenido.');
+                return;
+            }
+            generatePdf(true);
+        });
+
+        document.getElementById('generate-cover-btn').addEventListener('click', () => {
+            if (!imagesData.frontCover.file || !imagesData.backCover.file) {
+                alert('Por favor, sube la portada y la contraportada para poder generar el archivo.');
+                return;
+            }
+            generatePdf(false);
         });
 
         function alert(message) {
