@@ -172,8 +172,12 @@
             <canvas id="editor-canvas" width="400" height="480"></canvas>
             <div class="editor-controls">
                 <div class="slider-group">
-                    <label for="zoom-slider" class="text-sm font-medium text-gray-700">Zoom</label>
-                    <input type="range" id="zoom-slider" min="0.1" max="5" step="0.01" class="w-full">
+                    <label for="width-slider" class="text-sm font-medium text-gray-700">Ancho</label>
+                    <input type="range" id="width-slider" min="0.1" max="5" step="0.01" class="w-full">
+                </div>
+                <div class="slider-group">
+                    <label for="height-slider" class="text-sm font-medium text-gray-700">Alto</label>
+                    <input type="range" id="height-slider" min="0.1" max="5" step="0.01" class="w-full">
                 </div>
                 <div class="flex justify-center mt-4">
                     <button id="save-edit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg mr-2">Guardar</button>
@@ -205,7 +209,8 @@
         const saveEditBtn = document.getElementById('save-edit-btn');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const resetEditBtn = document.getElementById('reset-edit-btn');
-        const zoomSlider = document.getElementById('zoom-slider');
+        const widthSlider = document.getElementById('width-slider');
+        const heightSlider = document.getElementById('height-slider');
 
         // Data structure to store images and their transformations
         const imagesData = {
@@ -243,12 +248,8 @@
 
                 // If this is the first time editing, calculate initial scale and position
                 if (imageData.transform.scaleX === 1 && imageData.transform.scaleY === 1 && imageData.transform.x === 0 && imageData.transform.y === 0) {
-                    let scale;
-                    if (isCover) {
-                        scale = Math.max(canvasWidth / img.width, canvasHeight / img.height);
-                    } else {
-                        scale = Math.min(canvasWidth / img.width, canvasHeight / img.height);
-                    }
+                    // Default to 'contain' scaling for all images to ensure nothing is cropped initially.
+                    const scale = Math.min(canvasWidth / img.width, canvasHeight / img.height);
                     imageData.transform.scaleX = scale;
                     imageData.transform.scaleY = scale;
 
@@ -265,8 +266,9 @@
                 editorCtx.drawImage(img, imageData.transform.x, imageData.transform.y, drawWidth, drawHeight);
                 drawEditorGuides(editorCtx);
 
-                // Update slider
-                zoomSlider.value = imageData.transform.scaleX;
+                // Update sliders
+                widthSlider.value = imageData.transform.scaleX;
+                heightSlider.value = imageData.transform.scaleY;
             };
             img.src = imageData.url;
         };
@@ -388,7 +390,7 @@
             editorCanvas.style.cursor = 'grab';
         });
 
-        zoomSlider.addEventListener('input', (e) => {
+        widthSlider.addEventListener('input', (e) => {
             let imageData;
             if (currentImageIndex.type === 'frontCover') {
                 imageData = imagesData.frontCover;
@@ -397,9 +399,20 @@
             } else {
                 imageData = imagesData.pages[currentImageIndex.index];
             }
-            const newScale = parseFloat(e.target.value);
-            imageData.transform.scaleX = newScale;
-            imageData.transform.scaleY = newScale; // Mantener proporción
+            imageData.transform.scaleX = parseFloat(e.target.value);
+            updateImageOnEditor(imageData);
+        });
+
+        heightSlider.addEventListener('input', (e) => {
+            let imageData;
+            if (currentImageIndex.type === 'frontCover') {
+                imageData = imagesData.frontCover;
+            } else if (currentImageIndex.type === 'backCover') {
+                imageData = imagesData.backCover;
+            } else {
+                imageData = imagesData.pages[currentImageIndex.index];
+            }
+            imageData.transform.scaleY = parseFloat(e.target.value);
             updateImageOnEditor(imageData);
         });
 
@@ -423,7 +436,9 @@
             imageData.transform.scaleX = newScale;
             imageData.transform.scaleY = newScale;
 
-            zoomSlider.value = newScale;
+            // Update sliders to stay in sync
+            widthSlider.value = newScale;
+            heightSlider.value = newScale;
 
             updateImageOnEditor(imageData);
         });
