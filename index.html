@@ -677,27 +677,39 @@
             const { finalBookWidth, finalBookHeight } = pageLayout;
             const originalWidth = imageEmbed.width;
             const originalHeight = imageEmbed.height;
-
-            // Ratio to convert canvas pixels to PDF points
             const ratio = finalBookWidth / editorCanvas.width;
 
-            // Calculate the final draw dimensions in PDF points
+            // 1. Calculate final draw dimensions in PDF points
             const pdfDrawWidth = originalWidth * transform.scaleX * ratio;
             const pdfDrawHeight = originalHeight * transform.scaleY * ratio;
 
-            // Calculate the final X position in PDF points
-            const pdfX = position.x + (transform.x * ratio);
+            // 2. Calculate the center of the target PDF box
+            const boxCenterX = position.x + finalBookWidth / 2;
+            const boxCenterY = position.y + finalBookHeight / 2;
 
-            // Calculate the final Y position, accounting for the inverted Y-axis
-            const canvasBottomY = transform.y + (originalHeight * transform.scaleY);
-            const pdfY = position.y + ((editorCanvas.height - canvasBottomY) / editorCanvas.height) * finalBookHeight;
+            // 3. Calculate the base (centered) position for the image's bottom-left corner
+            const baseX = boxCenterX - pdfDrawWidth / 2;
+            const baseY = boxCenterY - pdfDrawHeight / 2;
+
+            // 4. Calculate the user's pan offset from the center in canvas pixels
+            const editorDrawWidth = originalWidth * transform.scaleX;
+            const editorDrawHeight = originalHeight * transform.scaleY;
+            const initialCanvasX = (editorCanvas.width - editorDrawWidth) / 2;
+            const initialCanvasY = (editorCanvas.height - editorDrawHeight) / 2;
+            const panX_canvas = transform.x - initialCanvasX;
+            const panY_canvas = transform.y - initialCanvasY;
+
+            // 5. Scale the pan offset to PDF points and apply it to the base position
+            // The Y pan must be inverted because canvas Y is top-down and PDF Y is bottom-up.
+            const finalX = baseX + (panX_canvas * ratio);
+            const finalY = baseY - (panY_canvas * ratio);
 
             page.drawImage(imageEmbed, {
-                x: pdfX,
-                y: pdfY,
+                x: finalX,
+                y: finalY,
                 width: pdfDrawWidth,
                 height: pdfDrawHeight,
-                    rotate: degrees(rotation),
+                rotate: degrees(rotation),
             });
         };
 
