@@ -679,41 +679,38 @@
             const originalHeight = imageEmbed.height;
             const ratio = finalBookWidth / editorCanvas.width;
 
-            // Calculate final draw dimensions and the panned position PRE-ROTATION
+            // 1. Calculate final draw dimensions in PDF points
             const pdfDrawWidth = originalWidth * transform.scaleX * ratio;
             const pdfDrawHeight = originalHeight * transform.scaleY * ratio;
 
+            // 2. Calculate the center of the target PDF box
+            const boxCenterX = position.x + finalBookWidth / 2;
+            const boxCenterY = position.y + finalBookHeight / 2;
+
+            // 3. Calculate the base (centered) position for the image's bottom-left corner
+            const baseX = boxCenterX - pdfDrawWidth / 2;
+            const baseY = boxCenterY - pdfDrawHeight / 2;
+
+            // 4. Calculate the user's pan offset from the center in canvas pixels
             const editorDrawWidth = originalWidth * transform.scaleX;
             const editorDrawHeight = originalHeight * transform.scaleY;
             const initialCanvasX = (editorCanvas.width - editorDrawWidth) / 2;
             const initialCanvasY = (editorCanvas.height - editorDrawHeight) / 2;
-            const panX_pdf = (transform.x - initialCanvasX) * ratio;
-            const panY_pdf = (transform.y - initialCanvasY) * ratio;
+            const panX_canvas = transform.x - initialCanvasX;
+            const panY_canvas = transform.y - initialCanvasY;
 
-            const baseX = position.x + (finalBookWidth - pdfDrawWidth) / 2;
-            const baseY = position.y + (finalBookHeight - pdfDrawHeight) / 2;
-
-            const finalX = baseX + panX_pdf;
-            const finalY = baseY - panY_pdf; // Y-pan is inverted
-
-            // Now, apply rotation using the stable graphics state method
-            page.pushGraphicsState();
-
-            const boxCenterX = position.x + finalBookWidth / 2;
-            const boxCenterY = position.y + finalBookHeight / 2;
-
-            if (rotation !== 0) {
-                page.rotate(degrees(rotation), { around: { x: boxCenterX, y: boxCenterY } });
-            }
+            // 5. Scale the pan offset to PDF points and apply it to the base position
+            const finalX = baseX + (panX_canvas * ratio);
+            // Re-evaluating the Y-pan direction based on user feedback.
+            const finalY = baseY + (panY_canvas * ratio);
 
             page.drawImage(imageEmbed, {
                 x: finalX,
                 y: finalY,
                 width: pdfDrawWidth,
                 height: pdfDrawHeight,
+                rotate: degrees(rotation),
             });
-
-            page.popGraphicsState();
         };
 
         const drawBackgroundImage = async (pdfDoc, page, pageLayout) => {
