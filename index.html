@@ -101,99 +101,166 @@
 </head>
 <body class="bg-gray-100 p-8">
     <div class="container">
-        <div class="card space-y-8">
-            <h1 class="text-3xl font-bold text-center text-blue-600">Generador de Libros para Colorear</h1>
 
-            <p class="text-center text-gray-600">Sube la portada, la contraportada y las imágenes para las páginas. El programa hará los ajustes para la impresión.</p>
-
-            <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-                <div class="flex-1">
-                    <label class="text-lg font-medium text-gray-700">Subir Portada</label>
-                    <div class="mt-2 w-full">
-                        <label for="front-cover-input" class="file-input-label hover:bg-blue-700">Seleccionar Portada</label>
-                        <input type="file" id="front-cover-input" class="hidden" accept="image/*">
-                    </div>
-                    <div id="front-cover-preview" class="image-preview mt-4">
-                        <span class="text-sm">Vista previa de la portada</span>
-                    </div>
-                </div>
-
-                <div class="flex-1">
-                    <label class="text-lg font-medium text-gray-700">Subir Contraportada</label>
-                    <div class="mt-2 w-full">
-                        <label for="back-cover-input" class="file-input-label hover:bg-blue-700">Seleccionar Contraportada</label>
-                        <input type="file" id="back-cover-input" class="hidden" accept="image/*">
-                    </div>
-                    <div id="back-cover-preview" class="image-preview mt-4">
-                        <span class="text-sm">Vista previa de la contraportada</span>
-                    </div>
+        <!-- Main Menu Section -->
+        <div id="main-menu-section">
+            <div class="card text-center">
+                <h1 class="text-4xl font-bold text-gray-800 mb-6">Estudio de Diseño Creativo</h1>
+                <p class="text-lg text-gray-600 mb-8">Selecciona el tipo de proyecto que quieres crear.</p>
+                <div class="flex flex-col md:flex-row justify-center items-center gap-6">
+                    <button id="show-coloring-book-btn" class="w-full md:w-64 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                        Crear Libro para Colorear
+                    </button>
+                    <button id="show-party-favor-btn" class="w-full md:w-64 bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                        Crear Cotillón de Cumpleaños
+                    </button>
                 </div>
             </div>
-
-            <div class="mt-4">
-                <label class="text-lg font-medium text-gray-700">Subir Páginas (múltiples archivos)</label>
-                <div class="mt-2 w-full">
-                    <label for="pages-input" class="file-input-label hover:bg-blue-700">Seleccionar Páginas</label>
-                    <input type="file" id="pages-input" class="hidden" accept="image/*" multiple>
-                </div>
-                <div id="pages-preview" class="image-preview mt-4">
-                    <span class="text-sm">Vista previa de las páginas</span>
-                </div>
-            </div>
-
-            <div class="border-t border-gray-200 pt-6">
-                <h2 class="text-xl font-bold text-center text-gray-800 mb-4">Opciones de Impresión</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="text-lg font-medium text-gray-700">Tamaño del Libro (cm)</label>
-                        <div class="flex items-center space-x-2 mt-2">
-                            <input type="number" id="book-width-input" value="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <span class="text-gray-500">x</span>
-                            <input type="number" id="book-height-input" value="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                    </div>
-                    <div>
-                        <label for="paper-size-select" class="text-lg font-medium text-gray-700">Tamaño del Papel</label>
-                        <select id="paper-size-select" class="w-full p-2 mt-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <option value="Letter">Carta (Letter)</option>
-                            <option value="A4">A4</option>
-                            <option value="Legal">Oficio (Legal)</option>
-                        </select>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="text-lg font-medium text-gray-700">Imagen de Fondo (Opcional)</label>
-                        <div class="mt-2">
-                             <label for="background-input" class="file-input-label bg-gray-600 hover:bg-gray-700">Seleccionar Fondo</label>
-                            <input type="file" id="background-input" class="hidden" accept="image/*">
-                            <span id="background-filename" class="ml-4 text-gray-600"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col sm:flex-row justify-center items-center pt-4 space-y-4 sm:space-y-0 sm:space-x-4">
-                <button id="generate-pdf-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                    Libro Completo
-                </button>
-                <button id="generate-cover-btn" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                    Solo Portada
-                </button>
-                <button id="generate-pages-btn" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                    Solo Dibujos
-                </button>
-            </div>
-
         </div>
 
+        <!-- Coloring Book Section -->
+        <div id="coloring-book-section" class="hidden">
+            <button class="back-to-menu-btn mb-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">&larr; Volver al Menú</button>
+            <div class="card space-y-8">
+                <h1 class="text-3xl font-bold text-center text-blue-600">Generador de Libros para Colorear</h1>
+
+                <p class="text-center text-gray-600">Sube la portada, la contraportada y las imágenes para las páginas. El programa hará los ajustes para la impresión.</p>
+
+                <div class="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
+                    <div class="flex-1">
+                        <label class="text-lg font-medium text-gray-700">Subir Portada</label>
+                        <div class="mt-2 w-full">
+                            <label for="front-cover-input" class="file-input-label hover:bg-blue-700">Seleccionar Portada</label>
+                            <input type="file" id="front-cover-input" class="hidden" accept="image/*">
+                        </div>
+                        <div id="front-cover-preview" class="image-preview mt-4">
+                            <span class="text-sm">Vista previa de la portada</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-1">
+                        <label class="text-lg font-medium text-gray-700">Subir Contraportada</label>
+                        <div class="mt-2 w-full">
+                            <label for="back-cover-input" class="file-input-label hover:bg-blue-700">Seleccionar Contraportada</label>
+                            <input type="file" id="back-cover-input" class="hidden" accept="image/*">
+                        </div>
+                        <div id="back-cover-preview" class="image-preview mt-4">
+                            <span class="text-sm">Vista previa de la contraportada</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label class="text-lg font-medium text-gray-700">Subir Páginas (múltiples archivos)</label>
+                    <div class="mt-2 w-full">
+                        <label for="pages-input" class="file-input-label hover:bg-blue-700">Seleccionar Páginas</label>
+                        <input type="file" id="pages-input" class="hidden" accept="image/*" multiple>
+                    </div>
+                    <div id="pages-preview" class="image-preview mt-4">
+                        <span class="text-sm">Vista previa de las páginas</span>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 pt-6">
+                    <h2 class="text-xl font-bold text-center text-gray-800 mb-4">Opciones de Impresión</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-lg font-medium text-gray-700">Tamaño del Libro (cm)</label>
+                            <div class="flex items-center space-x-2 mt-2">
+                                <input type="number" id="book-width-input" value="10" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <span class="text-gray-500">x</span>
+                                <input type="number" id="book-height-input" value="12" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="paper-size-select" class="text-lg font-medium text-gray-700">Tamaño del Papel</label>
+                            <select id="paper-size-select" class="w-full p-2 mt-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="Letter">Carta (Letter)</option>
+                                <option value="A4">A4</option>
+                                <option value="Legal">Oficio (Legal)</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-lg font-medium text-gray-700">Imagen de Fondo (Opcional)</label>
+                            <div class="mt-2">
+                                 <label for="background-input" class="file-input-label bg-gray-600 hover:bg-gray-700">Seleccionar Fondo</label>
+                                <input type="file" id="background-input" class="hidden" accept="image/*">
+                                <span id="background-filename" class="ml-4 text-gray-600"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center items-center pt-4 space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button id="generate-pdf-btn" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Libro Completo
+                    </button>
+                    <button id="generate-cover-btn" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Solo Portada
+                    </button>
+                    <button id="generate-pages-btn" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Solo Dibujos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Party Favor Section -->
+        <div id="party-favor-section" class="hidden">
+            <button class="back-to-menu-btn mb-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">&larr; Volver al Menú</button>
+            <div class="card">
+                <h1 class="text-3xl font-bold text-center text-purple-600 mb-4">Generador de Cotillones</h1>
+
+                <!-- Placeholder for future sub-menu -->
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Caja para Dulces (Tipo Leche)</h2>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="text-lg font-medium text-gray-700">Diseño Principal (Frente y Detrás)</label>
+                        <div class="mt-2">
+                            <label for="milk-box-main-input" class="file-input-label bg-purple-600 hover:bg-purple-700">Seleccionar Imagen</label>
+                            <input type="file" id="milk-box-main-input" class="hidden" accept="image/*">
+                        </div>
+                        <div id="milk-box-main-preview" class="image-preview mt-4 h-40">
+                            <span class="text-sm">Vista previa</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-lg font-medium text-gray-700">Diseño Lateral (Izquierda y Derecha)</label>
+                        <div class="mt-2">
+                            <label for="milk-box-side-input" class="file-input-label bg-purple-600 hover:bg-purple-700">Seleccionar Imagen</label>
+                            <input type="file" id="milk-box-side-input" class="hidden" accept="image/*">
+                        </div>
+                        <div id="milk-box-side-preview" class="image-preview mt-4 h-40">
+                            <span class="text-sm">Vista previa</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="milk-box-text-input" class="text-lg font-medium text-gray-700">Texto Personalizado (Opcional)</label>
+                        <input type="text" id="milk-box-text-input" placeholder="Ej: ¡Feliz Cumpleaños!" class="w-full mt-2 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                    </div>
+                </div>
+
+                <div class="flex justify-center pt-6 border-t border-gray-200 mt-6">
+                    <button id="generate-milk-box-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Generar PDF de Caja de Dulces
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Common Output Area -->
         <div id="output-area" class="mt-8 hidden">
             <div class="card space-y-4">
-                <h2 class="text-2xl font-bold text-center text-gray-800">Tu Libro de Colorear</h2>
+                <h2 class="text-2xl font-bold text-center text-gray-800">Tu Archivo PDF</h2>
                 <div id="pdf-viewer" class="w-full h-96 border border-gray-300 rounded-lg overflow-y-auto">
                     <!-- El PDF se renderizará aquí -->
                     <p class="text-center text-gray-500 mt-2">El PDF se mostrará aquí una vez generado.</p>
                 </div>
                 <div class="flex justify-center mt-4">
-                    <a id="download-link" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105" download="libro_para_colorear.pdf">
+                    <a id="download-link" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105" download="archivo.pdf">
                         Descargar PDF
                     </a>
                 </div>
@@ -930,6 +997,169 @@
                 alertDiv.remove();
             }, 3000);
         }
+
+        // --- Navigation Logic ---
+        const mainMenu = document.getElementById('main-menu-section');
+        const coloringBookSection = document.getElementById('coloring-book-section');
+        const partyFavorSection = document.getElementById('party-favor-section');
+
+        const showColoringBookBtn = document.getElementById('show-coloring-book-btn');
+        const showPartyFavorBtn = document.getElementById('show-party-favor-btn');
+        const backToMenuBtns = document.querySelectorAll('.back-to-menu-btn');
+
+        // --- Milk Box UI Logic ---
+        const milkBoxMainInput = document.getElementById('milk-box-main-input');
+        const milkBoxSideInput = document.getElementById('milk-box-side-input');
+        const milkBoxMainPreview = document.getElementById('milk-box-main-preview');
+        const milkBoxSidePreview = document.getElementById('milk-box-side-preview');
+        const generateMilkBoxBtn = document.getElementById('generate-milk-box-btn');
+        let milkBoxMainFile = null;
+        let milkBoxSideFile = null;
+
+        milkBoxMainInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                milkBoxMainFile = file;
+                renderImage(file, milkBoxMainPreview, 'milk-box-main');
+            }
+        });
+
+        milkBoxSideInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                milkBoxSideFile = file;
+                renderImage(file, milkBoxSidePreview, 'milk-box-side');
+            }
+        });
+
+        const generateMilkBoxPdf = async () => {
+            if (!milkBoxMainFile || !milkBoxSideFile) {
+                alert('Por favor, sube una imagen para el diseño principal y el lateral.');
+                return;
+            }
+
+            const buttonToUpdate = generateMilkBoxBtn;
+            const originalText = buttonToUpdate.innerHTML;
+            buttonToUpdate.innerHTML = 'Generando...';
+            buttonToUpdate.disabled = true;
+
+            const pdfDoc = await PDFDocument.create();
+            const page = pdfDoc.addPage(PageSizes.A4);
+            const { width: pageWidth, height: pageHeight } = page.getSize();
+            const cm = 28.3465;
+
+            // Milk box dimensions in cm
+            const boxWidth = 6 * cm;
+            const boxDepth = 6 * cm;
+            const boxHeight = 12 * cm;
+            const topFlapHeight = 3 * cm;
+            const glueFlapWidth = 1.5 * cm;
+
+            // Starting position (bottom-left corner of the first panel)
+            const startX = 2 * cm;
+            const startY = 5 * cm;
+
+            // Define panel positions
+            const panels = {
+                side1: { x: startX, y: startY, width: boxDepth, height: boxHeight },
+                front: { x: startX + boxDepth, y: startY, width: boxWidth, height: boxHeight },
+                side2: { x: startX + boxDepth + boxWidth, y: startY, width: boxDepth, height: boxHeight },
+                back:  { x: startX + boxDepth * 2 + boxWidth, y: startY, width: boxWidth, height: boxHeight }
+            };
+
+            const drawPanelImage = async (panel, imageFile) => {
+                const imgBytes = await imageFile.arrayBuffer();
+                let image = await pdfDoc.embedJpg(imgBytes).catch(() => pdfDoc.embedPng(imgBytes));
+                page.pushGraphicsState();
+                page.drawRectangle({ ...panel, color: rgb(1,1,1) }); // Clip with white background
+                page.clip();
+
+                // Scale image to cover the panel
+                const panelAspectRatio = panel.width / panel.height;
+                const imageAspectRatio = image.width / image.height;
+                let drawWidth, drawHeight, imgX, imgY;
+
+                if (imageAspectRatio > panelAspectRatio) { // Image is wider than panel
+                    drawHeight = panel.height;
+                    drawWidth = image.width * (panel.height / image.height);
+                    imgX = panel.x - (drawWidth - panel.width) / 2;
+                    imgY = panel.y;
+                } else { // Image is taller or same aspect ratio
+                    drawWidth = panel.width;
+                    drawHeight = image.height * (panel.width / image.width);
+                    imgX = panel.x;
+                    imgY = panel.y - (drawHeight - panel.height) / 2;
+                }
+
+                page.drawImage(image, { x: imgX, y: imgY, width: drawWidth, height: drawHeight });
+                page.popGraphicsState();
+            };
+
+            // Draw images on panels
+            await drawPanelImage(panels.side1, milkBoxSideFile);
+            await drawPanelImage(panels.front, milkBoxMainFile);
+            await drawPanelImage(panels.side2, milkBoxSideFile);
+            await drawPanelImage(panels.back, milkBoxMainFile);
+
+            // Draw cut and fold lines (this is a simplified representation)
+            const lineOptions = { thickness: 0.5, color: rgb(0, 0, 0) };
+            const dashOptions = { ...lineOptions, dashArray: [5, 5], color: rgb(0.5, 0.5, 0.5) };
+
+            // Main box outline
+            page.drawRectangle({ x: startX, y: startY, width: boxDepth * 2 + boxWidth * 2, height: boxHeight, borderColor: lineOptions.color, borderWidth: lineOptions.thickness });
+            // Vertical panel lines
+            page.drawLine({ start: { x: panels.front.x, y: startY }, end: { x: panels.front.x, y: startY + boxHeight }, ...dashOptions });
+            page.drawLine({ start: { x: panels.side2.x, y: startY }, end: { x: panels.side2.x, y: startY + boxHeight }, ...dashOptions });
+            page.drawLine({ start: { x: panels.back.x, y: startY }, end: { x: panels.back.x, y: startY + boxHeight }, ...dashOptions });
+
+            // Add text
+            const text = document.getElementById('milk-box-text-input').value;
+            if (text) {
+                const font = await pdfDoc.embedFont('Helvetica-Bold');
+                const textSize = 24;
+                const textWidth = font.widthOfTextAtSize(text, textSize);
+                page.drawText(text, {
+                    x: panels.front.x + (panels.front.width - textWidth) / 2,
+                    y: panels.front.y + panels.front.height / 2,
+                    font,
+                    size: textSize,
+                    color: rgb(0, 0, 0)
+                });
+            }
+
+            const pdfBytes = await pdfDoc.save();
+            renderPdfToCanvas(pdfBytes);
+            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            downloadLink.href = URL.createObjectURL(pdfBlob);
+            downloadLink.download = 'caja_de_dulces.pdf';
+            outputArea.classList.remove('hidden');
+
+            buttonToUpdate.innerHTML = originalText;
+            buttonToUpdate.disabled = false;
+        };
+
+        generateMilkBoxBtn.addEventListener('click', generateMilkBoxPdf);
+
+
+        // --- Navigation Logic ---
+        showColoringBookBtn.addEventListener('click', () => {
+            mainMenu.classList.add('hidden');
+            coloringBookSection.classList.remove('hidden');
+        });
+
+        showPartyFavorBtn.addEventListener('click', () => {
+            mainMenu.classList.add('hidden');
+            partyFavorSection.classList.remove('hidden');
+        });
+
+        backToMenuBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                coloringBookSection.classList.add('hidden');
+                partyFavorSection.classList.add('hidden');
+                mainMenu.classList.remove('hidden');
+            });
+        });
+
     </script>
 </body>
 </html>
