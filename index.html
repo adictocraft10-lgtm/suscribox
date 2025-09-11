@@ -754,21 +754,37 @@
         };
 
         const createInteriorPages = async (pdfDoc, pageLayout) => {
-            const { pageWidth, pageHeight, positions, finalBookWidth, finalBookHeight, xOffset, yOffset, contentWidth, contentHeight } = pageLayout;
-            for (let i = 0; i < imagesData.pages.length; i += 4) {
+            const { pageWidth, pageHeight, positions, finalBookWidth, finalBookHeight, xOffset, yOffset, contentWidth, contentHeight, cols, rows, pagesPerSheet } = pageLayout;
+            for (let i = 0; i < imagesData.pages.length; i += pagesPerSheet) {
                 const page = pdfDoc.addPage([pageWidth, pageHeight]);
                 await drawBackgroundImage(pdfDoc, page, pageLayout);
-                for (let j = 0; j < 4; j++) {
+
+                for (let j = 0; j < pagesPerSheet; j++) {
                     const pageIndex = i + j;
                     if (pageIndex < imagesData.pages.length) {
                         const imageData = imagesData.pages[pageIndex];
-                        await embedAndDrawImage(pdfDoc, page, imageData.file, positions[j], false, imageData.transform, pageLayout, imageData.rotation);
-                        page.drawRectangle({ x: positions[j].x, y: positions[j].y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
+                        const position = positions[j];
+                        await embedAndDrawImage(pdfDoc, page, imageData.file, position, false, imageData.transform, pageLayout, imageData.rotation);
+                        page.drawRectangle({ x: position.x, y: position.y, width: finalBookWidth, height: finalBookHeight, borderColor: rgb(0, 0, 0), borderWidth: 1.5 });
                     }
                 }
+
+                // Draw dynamic cut lines
                 page.drawRectangle({ x: xOffset, y: yOffset, width: contentWidth, height: contentHeight, borderColor: rgb(0.5, 0.5, 0.5), borderWidth: 0.5, borderDash: [5, 5] });
-                page.drawLine({ start: { x: xOffset + contentWidth / 2, y: yOffset }, end: { x: xOffset + contentWidth / 2, y: yOffset + contentHeight }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
-                page.drawLine({ start: { x: xOffset, y: yOffset + contentHeight / 2 }, end: { x: xOffset + contentWidth, y: yOffset + contentHeight / 2 }, thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5] });
+                for (let c = 1; c < cols; c++) {
+                    page.drawLine({
+                        start: { x: xOffset + c * finalBookWidth, y: yOffset },
+                        end: { x: xOffset + c * finalBookWidth, y: yOffset + contentHeight },
+                        thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5]
+                    });
+                }
+                for (let r = 1; r < rows; r++) {
+                     page.drawLine({
+                        start: { x: xOffset, y: yOffset + r * finalBookHeight },
+                        end: { x: xOffset + contentWidth, y: yOffset + r * finalBookHeight },
+                        thickness: 0.5, color: rgb(0.5, 0.5, 0.5), dashArray: [5, 5]
+                    });
+                }
             }
         };
 
@@ -801,27 +817,63 @@
             const cmToPoints = 28.3465;
             const finalBookWidth = bookWidth * cmToPoints;
             const finalBookHeight = bookHeight * cmToPoints;
-            const contentWidth = finalBookWidth * 2;
-            const contentHeight = finalBookHeight * 2;
-            const xOffset = (pageWidth - contentWidth) / 2;
-            const yOffset = (pageHeight - contentHeight) / 2;
 
-            const pageLayout = {
+            // --- Dynamic Layout Calculation ---
+            const cols = Math.floor(pageWidth / finalBookWidth);
+            const rows = Math.floor(pageHeight / finalBookHeight);
+            if (cols === 0 || rows === 0) {
+                alert("El tamaño del libro es demasiado grande para el papel seleccionado. Por favor, elige un tamaño de libro más pequeño o un papel más grande.");
+                buttonToUpdate.innerHTML = originalText;
+                buttonToUpdate.disabled = false;
+                return;
+            }
+            const pagesPerSheet = cols * rows;
+
+            // --- Create separate layouts for cover and interior pages ---
+
+            // Layout for the cover (always 2-up)
+            const coverContentWidth = finalBookWidth * 2;
+            const coverContentHeight = finalBookHeight;
+            const coverXOffset = (pageWidth - coverContentWidth) / 2;
+            const coverYOffset = (pageHeight - coverContentHeight) / 2;
+            const coverPageLayout = {
                 pageWidth, pageHeight, cmToPoints, finalBookWidth, finalBookHeight,
-                contentWidth, contentHeight, xOffset, yOffset,
-                positions: [
-                    { x: xOffset, y: yOffset + finalBookHeight },
-                    { x: xOffset + finalBookWidth, y: yOffset + finalBookHeight },
-                    { x: xOffset, y: yOffset },
-                    { x: xOffset + finalBookWidth, y: yOffset }
+                contentWidth: coverContentWidth, contentHeight: coverContentHeight,
+                xOffset: coverXOffset, yOffset: coverYOffset,
+                positions: [ // Position for back cover, then front cover
+                    { x: coverXOffset, y: coverYOffset },
+                    { x: coverXOffset + finalBookWidth, y: coverYOffset }
                 ]
             };
 
+            // Layout for the interior pages (dynamic grid)
+            const interiorContentWidth = cols * finalBookWidth;
+            const interiorContentHeight = rows * finalBookHeight;
+            const interiorXOffset = (pageWidth - interiorContentWidth) / 2;
+            const interiorYOffset = (pageHeight - interiorContentHeight) / 2;
+            const interiorPageLayout = {
+                pageWidth, pageHeight, cmToPoints, finalBookWidth, finalBookHeight,
+                contentWidth: interiorContentWidth, contentHeight: interiorContentHeight,
+                xOffset: interiorXOffset, yOffset: interiorYOffset,
+                cols, rows, pagesPerSheet,
+                positions: []
+            };
+
+            // Dynamically generate the positions for the interior page grid
+            for (let r = 0; r < interiorPageLayout.rows; r++) {
+                for (let c = 0; c < interiorPageLayout.cols; c++) {
+                    interiorPageLayout.positions.push({
+                        x: interiorPageLayout.xOffset + c * finalBookWidth,
+                        y: interiorPageLayout.yOffset + (interiorPageLayout.rows - 1 - r) * finalBookHeight
+                    });
+                }
+            }
+
             if (includeCover) {
-                await createCoverPage(pdfDoc, pageLayout);
+                await createCoverPage(pdfDoc, coverPageLayout);
             }
             if (includeInteriors) {
-                await createInteriorPages(pdfDoc, pageLayout);
+                await createInteriorPages(pdfDoc, interiorPageLayout);
             }
 
             const pdfBytes = await pdfDoc.save();
