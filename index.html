@@ -679,15 +679,10 @@
             const originalHeight = imageEmbed.height;
             const ratio = finalBookWidth / editorCanvas.width;
 
-            // 1. Calculate final draw dimensions in PDF points
+            // Calculate final draw dimensions and the panned position PRE-ROTATION
             const pdfDrawWidth = originalWidth * transform.scaleX * ratio;
             const pdfDrawHeight = originalHeight * transform.scaleY * ratio;
 
-            // 2. Calculate the center of the target PDF box
-            const boxCenterX = position.x + finalBookWidth / 2;
-            const boxCenterY = position.y + finalBookHeight / 2;
-
-            // 3. Calculate user's pan offset in canvas pixels and scale to PDF points
             const editorDrawWidth = originalWidth * transform.scaleX;
             const editorDrawHeight = originalHeight * transform.scaleY;
             const initialCanvasX = (editorCanvas.width - editorDrawWidth) / 2;
@@ -695,28 +690,29 @@
             const panX_pdf = (transform.x - initialCanvasX) * ratio;
             const panY_pdf = (transform.y - initialCanvasY) * ratio;
 
-            // 4. Calculate the final center point, including pan offset
-            // Y pan is inverted due to different coordinate system origins
-            const finalCenterX = boxCenterX + panX_pdf;
-            const finalCenterY = boxCenterY - panY_pdf;
+            const baseX = position.x + (finalBookWidth - pdfDrawWidth) / 2;
+            const baseY = position.y + (finalBookHeight - pdfDrawHeight) / 2;
 
-            // 5. Use graphics state to perform transformations
+            const finalX = baseX + panX_pdf;
+            const finalY = baseY - panY_pdf; // Y-pan is inverted
+
+            // Now, apply rotation using the stable graphics state method
             page.pushGraphicsState();
 
-            // Translate origin to the final center point
-            page.translate(finalCenterX, finalCenterY);
-            // Rotate coordinate system around the new origin
-            page.rotate(degrees(rotation));
+            const boxCenterX = position.x + finalBookWidth / 2;
+            const boxCenterY = position.y + finalBookHeight / 2;
 
-            // Draw the image centered at the new origin (0,0)
+            if (rotation !== 0) {
+                page.rotate(degrees(rotation), { around: { x: boxCenterX, y: boxCenterY } });
+            }
+
             page.drawImage(imageEmbed, {
-                x: -pdfDrawWidth / 2,
-                y: -pdfDrawHeight / 2,
+                x: finalX,
+                y: finalY,
                 width: pdfDrawWidth,
                 height: pdfDrawHeight,
             });
 
-            // Restore the graphics state to not affect other drawings
             page.popGraphicsState();
         };
 
