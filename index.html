@@ -687,30 +687,37 @@
             const boxCenterX = position.x + finalBookWidth / 2;
             const boxCenterY = position.y + finalBookHeight / 2;
 
-            // 3. Calculate the base (centered) position for the image's bottom-left corner
-            const baseX = boxCenterX - pdfDrawWidth / 2;
-            const baseY = boxCenterY - pdfDrawHeight / 2;
-
-            // 4. Calculate the user's pan offset from the center in canvas pixels
+            // 3. Calculate user's pan offset in canvas pixels and scale to PDF points
             const editorDrawWidth = originalWidth * transform.scaleX;
             const editorDrawHeight = originalHeight * transform.scaleY;
             const initialCanvasX = (editorCanvas.width - editorDrawWidth) / 2;
             const initialCanvasY = (editorCanvas.height - editorDrawHeight) / 2;
-            const panX_canvas = transform.x - initialCanvasX;
-            const panY_canvas = transform.y - initialCanvasY;
+            const panX_pdf = (transform.x - initialCanvasX) * ratio;
+            const panY_pdf = (transform.y - initialCanvasY) * ratio;
 
-            // 5. Scale the pan offset to PDF points and apply it to the base position
-            // The Y pan must be inverted because canvas Y is top-down and PDF Y is bottom-up.
-            const finalX = baseX + (panX_canvas * ratio);
-            const finalY = baseY - (panY_canvas * ratio);
+            // 4. Calculate the final center point, including pan offset
+            // Y pan is inverted due to different coordinate system origins
+            const finalCenterX = boxCenterX + panX_pdf;
+            const finalCenterY = boxCenterY - panY_pdf;
 
+            // 5. Use graphics state to perform transformations
+            page.pushGraphicsState();
+
+            // Translate origin to the final center point
+            page.translate(finalCenterX, finalCenterY);
+            // Rotate coordinate system around the new origin
+            page.rotate(degrees(rotation));
+
+            // Draw the image centered at the new origin (0,0)
             page.drawImage(imageEmbed, {
-                x: finalX,
-                y: finalY,
+                x: -pdfDrawWidth / 2,
+                y: -pdfDrawHeight / 2,
                 width: pdfDrawWidth,
                 height: pdfDrawHeight,
-                rotate: degrees(rotation),
             });
+
+            // Restore the graphics state to not affect other drawings
+            page.popGraphicsState();
         };
 
         const drawBackgroundImage = async (pdfDoc, page, pageLayout) => {
