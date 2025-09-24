@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de Fotos con Marcos</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <h1>Editor de Fotos con Marcos</h1>
+    <div class="container">
+        <div class="gallery-container">
+            <h2>1. Elige un Marco</h2>
+            <div id="marcos-gallery" class="gallery"></div>
+        </div>
+        <div class="editor-container">
+            <h2>2. Diseña tu Foto</h2>
+            <div id="editor" class="editor-stage"></div>
+            <div class="controls">
+                <input type="file" id="image-uploader" accept="image/*">
+                <button id="add-text">Añadir Texto</button>
+                <button id="download-btn">Descargar Imagen</button>
+            </div>
+        </div>
+        <div class="gallery-container">
+            <h2>3. Añade Stickers</h2>
+            <div id="stickers-gallery" class="gallery"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/konva@9.3.13/konva.min.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
